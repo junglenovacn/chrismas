@@ -12,7 +12,7 @@
         }
         body {
             overflow: hidden;
-            background: #0a0a0a;
+            background: #1a1008;
             font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
         }
         canvas {
@@ -82,8 +82,8 @@
     <script>
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0505);
-        scene.fog = new THREE.FogExp2(0x0a0505, 0.008);
+        scene.background = new THREE.Color(0x1a1008);
+        scene.fog = new THREE.FogExp2(0x1a1008, 0.005);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(25, 20, 25);
@@ -106,22 +106,22 @@
         controls.maxDistance = 60;
 
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
         scene.add(ambientLight);
 
-        const moonLight = new THREE.DirectionalLight(0x8888ff, 0.5);
+        const moonLight = new THREE.DirectionalLight(0xffeecc, 1.0);
         moonLight.position.set(0, 50, 0);
         scene.add(moonLight);
 
-        const courtyardLight = new THREE.PointLight(0xff6600, 1.5, 40);
-        courtyardLight.position.set(0, 15, 0);
+        const courtyardLight = new THREE.PointLight(0xff6600, 3.0, 50);
+        courtyardLight.position.set(0, 20, 0);
         scene.add(courtyardLight);
 
         // Create walls
         function createWall(width, height, depth, x, y, z, rotationY = 0) {
             const geometry = new THREE.BoxGeometry(width, height, depth);
             const material = new THREE.MeshPhongMaterial({
-                color: 0x8B4513,
+                color: 0xB8860B,
                 map: createBrickTexture()
             });
             const wall = new THREE.Mesh(geometry, material);
@@ -139,12 +139,12 @@
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
             
-            // Base color
-            ctx.fillStyle = '#8B4513';
+            // Base color - brighter
+            ctx.fillStyle = '#B8860B';
             ctx.fillRect(0, 0, 256, 256);
             
             // Brick pattern
-            ctx.strokeStyle = '#654321';
+            ctx.strokeStyle = '#8B6914';
             ctx.lineWidth = 2;
             
             const brickHeight = 32;
@@ -226,9 +226,9 @@
             
             // Gradient for lantern
             const gradient = ctx.createRadialGradient(64, 64, 20, 64, 64, 64);
-            gradient.addColorStop(0, '#ffcccc');
-            gradient.addColorStop(0.5, '#ff3333');
-            gradient.addColorStop(1, '#cc0000');
+            gradient.addColorStop(0, '#ffeeee');
+            gradient.addColorStop(0.5, '#ff6666');
+            gradient.addColorStop(1, '#ff0000');
             
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 128, 128);
@@ -238,10 +238,19 @@
             ctx.fillRect(0, 0, 128, 8);
             ctx.fillRect(0, 120, 128, 8);
             
-            // Add pattern
+            // Add pattern border
             ctx.strokeStyle = '#ffcc00';
             ctx.lineWidth = 2;
-            ctx.strokeRect(20, 20, 88, 88);
+            ctx.strokeRect(15, 20, 98, 88);
+            
+            // Add "平安" text
+            ctx.fillStyle = '#ffcc00';
+            ctx.font = 'bold 36px "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 4;
+            ctx.fillText('平安', 64, 64);
             
             return canvas;
         }
@@ -254,8 +263,8 @@
             const geometry = new THREE.SphereGeometry(2.5, 32, 32);
             const material = new THREE.MeshPhongMaterial({
                 map: new THREE.CanvasTexture(createLanternTexture()),
-                emissive: 0xff0000,
-                emissiveIntensity: 0.4,
+                emissive: 0xff3333,
+                emissiveIntensity: 0.6,
                 transparent: true,
                 opacity: 0.95
             });
@@ -282,8 +291,8 @@
             tassel.position.y = -6;
             lanternGroup.add(tassel);
             
-            // Inner light
-            const innerLight = new THREE.PointLight(0xff6600, 2, 15);
+            // Inner light - brighter
+            const innerLight = new THREE.PointLight(0xff6600, 4, 25);
             innerLight.position.y = 0;
             lanternGroup.add(innerLight);
             
@@ -306,8 +315,8 @@
             const geometry = new THREE.SphereGeometry(0.8, 16, 16);
             const material = new THREE.MeshPhongMaterial({
                 map: new THREE.CanvasTexture(createLanternTexture()),
-                emissive: 0xff0000,
-                emissiveIntensity: 0.5
+                emissive: 0xff3333,
+                emissiveIntensity: 0.7
             });
             const lantern = new THREE.Mesh(geometry, material);
             lantern.scale.y = 1.3;
@@ -323,7 +332,7 @@
             bottomCap.position.y = -1;
             lanternGroup.add(bottomCap);
             
-            const light = new THREE.PointLight(0xff6600, 0.8, 8);
+            const light = new THREE.PointLight(0xff6600, 2, 12);
             lanternGroup.add(light);
             
             return lanternGroup;
@@ -347,60 +356,6 @@
             wallLanterns.push(lantern);
         }
 
-        // Create light box (灯箱)
-        function createLightBox() {
-            const boxGroup = new THREE.Group();
-            
-            // Box frame
-            const frameGeometry = new THREE.BoxGeometry(3, 4, 0.5);
-            const frameMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
-            const frame = new THREE.Mesh(frameGeometry, frameMaterial);
-            boxGroup.add(frame);
-            
-            // Paper screen
-            const screenGeometry = new THREE.PlaneGeometry(2.5, 3.5);
-            const screenMaterial = new THREE.MeshPhongMaterial({
-                color: 0xffffcc,
-                emissive: 0xffaa00,
-                emissiveIntensity: 0.3,
-                transparent: true,
-                opacity: 0.8,
-                side: THREE.DoubleSide
-            });
-            const screen = new THREE.Mesh(screenGeometry, screenMaterial);
-            screen.position.z = 0.3;
-            boxGroup.add(screen);
-            
-            // Inner light
-            const light = new THREE.PointLight(0xffcc00, 1, 10);
-            light.position.z = 0.5;
-            boxGroup.add(light);
-            
-            return boxGroup;
-        }
-
-        // Create two rows of light boxes in courtyard
-        const lightBoxes = [];
-        for (let i = 0; i < 4; i++) {
-            const x = -yardWidth/2 + 6 + i * 6;
-            const z = -8;
-            const box = createLightBox();
-            box.position.set(x, 4, z);
-            box.rotation.y = Math.PI / 2;
-            scene.add(box);
-            lightBoxes.push(box);
-        }
-
-        for (let i = 0; i < 4; i++) {
-            const x = -yardWidth/2 + 6 + i * 6;
-            const z = 8;
-            const box = createLightBox();
-            box.position.set(x, 4, z);
-            box.rotation.y = Math.PI / 2;
-            scene.add(box);
-            lightBoxes.push(box);
-        }
-
         // Create small colorful lights on walls
         function createSmallColorLight(color) {
             const geometry = new THREE.SphereGeometry(0.15, 8, 8);
@@ -411,7 +366,7 @@
             });
             const light = new THREE.Mesh(geometry, material);
             
-            const pointLight = new THREE.PointLight(color, 0.5, 5);
+            const pointLight = new THREE.PointLight(color, 1.5, 8);
             light.add(pointLight);
             
             return light;
@@ -469,7 +424,7 @@
         // Ground
         const groundGeometry = new THREE.PlaneGeometry(yardWidth, yardDepth);
         const groundMaterial = new THREE.MeshPhongMaterial({
-            color: 0x4a3535,
+            color: 0x6b4423,
             side: THREE.DoubleSide
         });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -481,7 +436,7 @@
         // Courtyard floor pattern
         const floorGeometry = new THREE.PlaneGeometry(yardWidth - 2, yardDepth - 2);
         const floorMaterial = new THREE.MeshPhongMaterial({
-            color: 0x6b4423,
+            color: 0x8B6914,
             map: createFloorTexture()
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -497,10 +452,10 @@
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
             
-            ctx.fillStyle = '#6b4423';
+            ctx.fillStyle = '#8B6914';
             ctx.fillRect(0, 0, 256, 256);
             
-            ctx.strokeStyle = '#5a3a1a';
+            ctx.strokeStyle = '#6b4423';
             ctx.lineWidth = 2;
             
             const tileSize = 32;
@@ -630,16 +585,11 @@
                 lantern.position.y = 9 + Math.sin(time * 2 + i) * 0.3;
             });
 
-            // Animate light boxes
-            lightBoxes.forEach((box, i) => {
-                box.children[1].material.emissiveIntensity = 0.2 + Math.sin(time * 3 + i) * 0.15;
-            });
-
             // Animate colorful lights
             colorfulLights.forEach((light, i) => {
                 const lightMesh = light;
                 if (lightMesh.children[0]) {
-                    lightMesh.children[0].intensity = 0.3 + Math.sin(time * 4 + i) * 0.2;
+                    lightMesh.children[0].intensity = 1.0 + Math.sin(time * 4 + i) * 0.5;
                 }
             });
 
@@ -669,7 +619,7 @@
             }
 
             // Animate lights
-            courtyardLight.intensity = 1.2 + Math.sin(time) * 0.3;
+            courtyardLight.intensity = 3.0 + Math.sin(time) * 0.5;
 
             controls.update();
             renderer.render(scene, camera);
