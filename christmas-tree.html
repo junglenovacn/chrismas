@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sci-Fi Christmas Tree</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+        }
+        canvas {
+            display: block;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            font-size: 14px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #input-panel {
+            position: absolute;
+            
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0, 20, 40, 0.8);
+            padding: 15px 25px;
+            border: 1px solid #00ffff;
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        #input-panel input {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            outline: none;
+            width: 200px;
+        }
+        #input-panel input::placeholder {
+            color: rgba(0, 255, 255, 0.5);
+        }
+        #input-panel button {
+            background: linear-gradient(135deg, #00ffff, #0088ff);
+            border: none;
+            color: #000;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        #input-panel button:hover {
+            box-shadow: 0 0 15px #00ffff;
+            transform: scale(1.05);
+        }
+        #custom-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) perspective(1000px) rotateY(0deg);
+            color: #00ffff;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff;
+            opacity: 0;
+            pointer-events: none;
+            text-align: center;
+            white-space: nowrap;
+            z-index: 50;
+        }
+        #custom-text.visible {
+            animation: rotateIn 3s ease-out forwards;
+        }
+        @keyframes rotateIn {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) perspective(1000px) rotateY(180deg) scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) perspective(1000px) rotateY(0deg) scale(1);
+            }
+        }
+        #share-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        #share-modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(0, 40, 60, 0.95));
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.3);
+        }
+        .modal-content h3 {
+            color: #00ffff;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 24px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        .modal-content textarea {
+            width: 100%;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: none;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        .modal-content .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .modal-content button {
+            padding: 10px 25px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .modal-content .copy-btn {
+            background: linear-gradient(135deg, #00ffff, #0088ff);
+            color: #000;
+            font-weight: bold;
+        }
+        .modal-content .close-btn {
+            background: rgba(255, 0, 0, 0.3);
+            color: #ff6666;
+            border: 1px solid #ff6666;
+        }
+        .modal-content button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        🎄 Sci-Fi Christmas Tree 🎄<br>
+        拖动鼠标旋转视角 | 滚轮缩放
+    </div>
+    
+    <div id="input-panel">
+        <input type="text" id="message-input" placeholder="输入祝福文字..." maxlength="20">
+        <button onclick="generateLink()">生成专属链接</button>
+    </div>
+    
+    <div id="custom-text"></div>
+    
+    <div id="share-modal">
+        <div class="modal-content">
+            <h3>🎄 你的专属圣诞祝福 🎄</h3>
+            <textarea id="share-url" rows="3" readonly></textarea>
+            <div class="buttons">
+                <button class="copy-btn" onclick="copyUrl()">复制链接</button>
+                <button class="close-btn" onclick="closeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Get message from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const customMessage = urlParams.get('msg');
+        
+        if (customMessage) {
+            document.getElementById('input-panel').style.display = 'none';
+        }
+
+        // Generate star texture
+        function createStarTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // Create star shape
+            ctx.save();
+            ctx.translate(64, 64);
+            
+            // Draw star
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * 50, 
+                          -Math.sin((18 + i * 72) * Math.PI / 180) * 50);
+                ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * 25, 
+                          -Math.sin((54 + i * 72) * Math.PI / 180) * 25);
+            }
+            ctx.closePath();
+            
+            // Create gradient fill
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 50);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.5, '#ffff00');
+            gradient.addColorStop(1, '#ff8800');
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Add glow
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            
+            ctx.restore();
+            
+            return canvas;
+        }
+
+        const starTexture = new THREE.CanvasTexture(createStarTexture());
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+        scene.fog = new THREE.FogExp2(0x0a0a1a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(15, 10, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0x00ffff, 2, 50);
+        pointLight1.position.set(10, 20, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xff00ff, 2, 50);
+        pointLight2.position.set(-10, 20, -10);
+        scene.add(pointLight2);
+
+        const pointLight3 = new THREE.PointLight(0x00ff00, 1, 30);
+        pointLight3.position.set(0, 5, 0);
+        scene.add(pointLight3);
+
+        // Create holographic tree
+        const treeGroup = new THREE.Group();
+        scene.add(treeGroup);
+
+        // Tree layers
+        const layers = 8;
+        const treeParts = [];
+
+        for (let i = 0; i < layers; i++) {
+            const radius = 4 - i * 0.4;
+            const height = i * 1.5;
+            const geometry = new THREE.ConeGeometry(radius, 2, 8, 1, true);
+            
+            const material = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(0.5 + i * 0.05, 0.8, 0.3),
+                transparent: true,
+                opacity: 0.7,
+                side: THREE.DoubleSide,
+                wireframe: true
+            });
+
+            const cone = new THREE.Mesh(geometry, material);
+            cone.position.y = height;
+            cone.rotation.y = Math.PI / 8;
+            
+            treeGroup.add(cone);
+            treeParts.push({ mesh: cone, originalY: height, layer: i });
+
+            // Add inner glowing layer
+            const innerGeometry = new THREE.ConeGeometry(radius * 0.7, 1.8, 6, 1, true);
+            const innerMaterial = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(0.3 + i * 0.03, 1, 0.5),
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            const innerCone = new THREE.Mesh(innerGeometry, innerMaterial);
+            innerCone.position.y = height;
+            treeGroup.add(innerCone);
+        }
+
+        // Sci-fi decorations - floating particles
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particleCount = 200;
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 4;
+            const height = Math.random() * 12;
+            
+            positions[i * 3] = Math.cos(angle) * radius;
+            positions[i * 3 + 1] = height;
+            positions[i * 3 + 2] = Math.sin(angle) * radius;
+
+            const color = new THREE.Color().setHSL(Math.random(), 1, 0.6);
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+
+            sizes[i] = Math.random() * 0.3 + 0.1;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.3,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            blending: THREE.AdditiveBlending,
+            map: starTexture,
+            depthWrite: false
+        });
+
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
+
+        // Energy rings
+        const rings = [];
+        for (let i = 0; i < 5; i++) {
+            const ringGeometry = new THREE.TorusGeometry(3 - i * 0.4, 0.05, 8, 64);
+            const ringMaterial = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(0.5 + i * 0.1, 1, 0.5),
+                transparent: true,
+                opacity: 0.6
+            });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.position.y = 2 + i * 2;
+            ring.rotation.x = Math.PI / 2;
+            scene.add(ring);
+            rings.push({ mesh: ring, speed: 0.02 - i * 0.003, originalY: 2 + i * 2 });
+        }
+
+        // Star at the top
+        const starGeometry = new THREE.OctahedronGeometry(0.8, 0);
+        const starMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.9
+        });
+        const star = new THREE.Mesh(starGeometry, starMaterial);
+        star.position.y = 13;
+        scene.add(star);
+
+        // Star glow
+        const glowGeometry = new THREE.SphereGeometry(1.2, 32, 32);
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.3,
+            blending: THREE.AdditiveBlending
+        });
+        const starGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+        starGlow.position.y = 13;
+        scene.add(starGlow);
+
+        // Ground platform
+        const platformGeometry = new THREE.CylinderGeometry(6, 6, 0.2, 32);
+        const platformMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.3,
+            wireframe: true
+        });
+        const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+        platform.position.y = -0.1;
+        scene.add(platform);
+
+        // Ground grid
+        const gridHelper = new THREE.GridHelper(30, 30, 0x00ffff, 0x003333);
+        gridHelper.position.y = -0.2;
+        scene.add(gridHelper);
+
+        // Floor particles
+        const floorParticlesGeometry = new THREE.BufferGeometry();
+        const floorParticleCount = 100;
+        const floorPositions = new Float32Array(floorParticleCount * 3);
+
+        for (let i = 0; i < floorParticleCount; i++) {
+            floorPositions[i * 3] = (Math.random() - 0.5) * 30;
+            floorPositions[i * 3 + 1] = Math.random() * 0.5;
+            floorPositions[i * 3 + 2] = (Math.random() - 0.5) * 30;
+        }
+
+        floorParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(floorPositions, 3));
+        const floorParticlesMaterial = new THREE.PointsMaterial({
+            color: 0x00ffff,
+            size: 0.15,
+            transparent: true,
+            opacity: 0.5,
+            map: starTexture,
+            depthWrite: false
+        });
+        const floorParticles = new THREE.Points(floorParticlesGeometry, floorParticlesMaterial);
+        scene.add(floorParticles);
+
+        // Energy beams
+        const beams = [];
+        for (let i = 0; i < 6; i++) {
+            const beamGeometry = new THREE.CylinderGeometry(0.02, 0.02, 15, 8);
+            const beamMaterial = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(i * 0.1, 1, 0.5),
+                transparent: true,
+                opacity: 0.3,
+                blending: THREE.AdditiveBlending
+            });
+            const beam = new THREE.Mesh(beamGeometry, beamMaterial);
+            const angle = (i / 6) * Math.PI * 2;
+            beam.position.x = Math.cos(angle) * 3;
+            beam.position.z = Math.sin(angle) * 3;
+            beam.position.y = 7.5;
+            scene.add(beam);
+            beams.push(beam);
+        }
+
+        // Animation
+        let time = 0;
+        const particlePositions = particles.geometry.attributes.position.array;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            // Animate tree layers
+            treeParts.forEach((part, i) => {
+                part.mesh.rotation.y += 0.005 * (i + 1);
+                part.mesh.position.y = part.originalY + Math.sin(time + i) * 0.2;
+            });
+
+            // Animate particles
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                particlePositions[i3 + 1] += 0.02;
+                
+                if (particlePositions[i3 + 1] > 12) {
+                    particlePositions[i3 + 1] = 0;
+                }
+                
+                // Add wave motion
+                particlePositions[i3] += Math.sin(time + i) * 0.01;
+                particlePositions[i3 + 2] += Math.cos(time + i) * 0.01;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            // Animate rings
+            rings.forEach((ring, i) => {
+                ring.mesh.rotation.z += ring.speed;
+                ring.mesh.position.y = ring.originalY + Math.sin(time + i) * 0.3;
+            });
+
+            // Animate star
+            star.rotation.y += 0.02;
+            star.rotation.x += 0.01;
+            star.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+            starGlow.scale.setScalar(1 + Math.sin(time * 2) * 0.2);
+
+            // Animate beams
+            beams.forEach((beam, i) => {
+                beam.material.opacity = 0.2 + Math.sin(time * 3 + i) * 0.15;
+            });
+
+            // Animate lights
+            pointLight1.intensity = 1.5 + Math.sin(time * 2) * 0.5;
+            pointLight2.intensity = 1.5 + Math.cos(time * 2) * 0.5;
+            pointLight3.intensity = 0.8 + Math.sin(time * 3) * 0.3;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Hide title after animation
+        setTimeout(() => {
+            document.getElementById('title').classList.add('faded');
+        }, 4000);
+
+        // Show custom message after 20 seconds
+        if (customMessage) {
+            setTimeout(() => {
+                const textElement = document.getElementById('custom-text');
+                textElement.textContent = decodeURIComponent(customMessage);
+                textElement.classList.add('visible');
+            }, 20000);
+        }
+
+        animate();
+
+        // Generate share link
+        function generateLink() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) {
+                alert('请输入祝福文字！');
+                return;
+            }
+            
+            const encodedMessage = encodeURIComponent(message);
+            
+            // Check if running on localhost or file://
+            const isLocalhost = window.location.hostname === 'localhost' || 
+                                window.location.hostname === '127.0.0.1' ||
+                                window.location.protocol === 'file:';
+            
+            if (isLocalhost) {
+                // Show deployment options
+                showDeploymentModal(encodedMessage);
+            } else {
+                const baseUrl = window.location.origin + window.location.pathname;
+                const shareUrl = `${baseUrl}?msg=${encodedMessage}`;
+                document.getElementById('share-url').value = shareUrl;
+                document.getElementById('share-modal').classList.add('show');
+            }
+        }
+
+        function showDeploymentModal(message) {
+            const deploymentModal = document.createElement('div');
+            deploymentModal.id = 'deployment-modal';
+            deploymentModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 300;
+            `;
+            
+            deploymentModal.innerHTML = `
+                <div style="background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(0, 40, 60, 0.95));
+                            border: 2px solid #00ffff;
+                            border-radius: 15px;
+                            padding: 30px;
+                            max-width: 600px;
+                            width: 90%;
+                            box-shadow: 0 0 50px rgba(0, 255, 255, 0.3);">
+                    <h3 style="color: #00ffff; margin-bottom: 20px; text-align: center; font-size: 24px; text-shadow: 0 0 10px #00ffff;">
+                        🚀 部署到网络 🚀
+                    </h3>
+                    <p style="color: #00ffff; margin-bottom: 20px; line-height: 1.6;">
+                        本地环境无法生成网络访问链接。请选择以下方案之一：
+                    </p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #00ffff; margin-bottom: 10px;">方案1: 使用 Cloud Studio（推荐）</h4>
+                        <p style="color: #88ffff; margin-bottom: 10px; font-size: 14px;">
+                            点击顶部 CloudStudio 按钮，一键部署到云端
+                        </p>
+                        <button onclick="closeDeploymentModal('deployment-modal'); alert('请在集成菜单中点击 CloudStudio 完成部署');" 
+                                style="background: linear-gradient(135deg, #00ffff, #0088ff);
+                                       border: none;
+                                       color: #000;
+                                       padding: 10px 20px;
+                                       border-radius: 5px;
+                                       cursor: pointer;
+                                       font-weight: bold;">
+                            打开 Cloud Studio
+                        </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #00ffff; margin-bottom: 10px;">方案2: GitHub Pages</h4>
+                        <p style="color: #88ffff; margin-bottom: 10px; font-size: 14px;">
+                            1. 将 index.html 上传到 GitHub 仓库<br>
+                            2. 在仓库设置中开启 GitHub Pages<br>
+                            3. 使用生成的链接 + ?msg=${message}
+                        </p>
+                        <button onclick="downloadWithMessage('${message}')"
+                                style="background: linear-gradient(135deg, #00ff88, #00cc66);
+                                       border: none;
+                                       color: #000;
+                                       padding: 10px 20px;
+                                       border-radius: 5px;
+                                       cursor: pointer;
+                                       font-weight: bold;">
+                            下载 HTML 文件
+                        </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #00ffff; margin-bottom: 10px;">方案3: Vercel / Netlify</h4>
+                        <p style="color: #88ffff; margin-bottom: 10px; font-size: 14px;">
+                            1. 访问 vercel.com 或 netlify.com<br>
+                            2. 拖拽此项目文件夹进行部署<br>
+                            3. 使用生成的链接 + ?msg=${message}
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button onclick="closeDeploymentModal('deployment-modal')"
+                                style="background: rgba(255, 0, 0, 0.3);
+                                       border: 1px solid #ff6666;
+                                       color: #ff6666;
+                                       padding: 10px 25px;
+                                       border-radius: 5px;
+                                       cursor: pointer;">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(deploymentModal);
+        }
+
+        function closeDeploymentModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function downloadWithMessage(message) {
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    const encodedMsg = encodeURIComponent(message);
+                    const shareUrl = '你的部署地址/?msg=' + encodedMsg;
+                    
+                    const downloadModal = document.createElement('div');
+                    downloadModal.id = 'download-modal';
+                    downloadModal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.9);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 400;
+                    `;
+                    
+                    downloadModal.innerHTML = `
+                        <div style="background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(0, 40, 60, 0.95));
+                                    border: 2px solid #00ffff;
+                                    border-radius: 15px;
+                                    padding: 30px;
+                                    max-width: 500px;
+                                    width: 90%;
+                                    box-shadow: 0 0 50px rgba(0, 255, 255, 0.3);">
+                            <h3 style="color: #00ffff; margin-bottom: 20px; text-align: center; font-size: 24px;">
+                                ✅ 下一步操作
+                            </h3>
+                            <div style="margin-bottom: 20px;">
+                                <p style="color: #00ffff; margin-bottom: 10px;">
+                                    <strong>1. 部署文件</strong>
+                                </p>
+                                <p style="color: #88ffff; margin-bottom: 10px; font-size: 14px;">
+                                    将 index.html 文件上传到 GitHub Pages、Vercel 或 Netlify
+                                </p>
+                                
+                                <p style="color: #00ffff; margin-bottom: 10px;">
+                                    <strong>2. 获取部署地址</strong>
+                                </p>
+                                <p style="color: #88ffff; margin-bottom: 10px; font-size: 14px;">
+                                    部署完成后会得到一个网址，例如：<br>
+                                    <code style="background: rgba(0,255,255,0.1); padding: 5px; display: block; margin-top: 5px; font-size: 12px;">
+                                        https://yourname.github.io/christmas-tree/
+                                    </code>
+                                </p>
+                                
+                                <p style="color: #00ffff; margin-bottom: 10px;">
+                                    <strong>3. 生成专属链接</strong>
+                                </p>
+                                <p style="color: #88ffff; margin-bottom: 10px; font-size: 14px;">
+                                    在部署地址后添加参数：<br>
+                                    <code style="background: rgba(0,255,255,0.1); padding: 5px; display: block; margin-top: 5px; font-size: 12px;">
+                                        https://yourname.github.io/christmas-tree/?msg=${message}
+                                    </code>
+                                </p>
+                            </div>
+                            
+                            <div style="text-align: center;">
+                                <button onclick="closeDeploymentModal('download-modal')"
+                                        style="background: linear-gradient(135deg, #00ffff, #0088ff);
+                                               border: none;
+                                               color: #000;
+                                               padding: 10px 25px;
+                                               border-radius: 5px;
+                                               cursor: pointer;
+                                               font-weight: bold;">
+                                    知道了
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(downloadModal);
+                    closeDeploymentModal('deployment-modal');
+                });
+        }
+
+        // Copy URL to clipboard
+        function copyUrl() {
+            const urlInput = document.getElementById('share-url');
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999);
+            
+            navigator.clipboard.writeText(urlInput.value).then(() => {
+                const message = urlParams.get('msg');
+                const decodedMessage = message ? decodeURIComponent(message) : '你的祝福';
+                alert(`✅ 链接已复制！\n\n分享链接给朋友，20秒后他们将看到："${decodedMessage}"`);
+            }).catch(() => {
+                alert('复制失败，请手动复制');
+            });
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('share-modal').classList.remove('show');
+        }
+
+        // Close modal on outside click
+        document.getElementById('share-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
+    </script>
+</body>
+</html>
