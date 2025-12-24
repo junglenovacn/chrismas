@@ -1,8 +1,18 @@
 # 3D 节日动画
 
-本仓库包含两个精美的3D节日动画页面：圣诞树和中国春节主题。
+本仓库包含两个精美的3D节日动画页面：科幻圣诞树和中国春节主题。
 
-## 🎄 页面1：科幻圣诞树
+---
+
+## 🏠 首页导航
+
+**在线预览**：https://junglenovacn.github.io/chrismas/
+
+访问首页选择你想体验的节日动画！
+
+---
+
+## 🎄 动画1：科幻圣诞树
 
 一个炫酷的科幻风格3D圣诞树动画，支持自定义祝福文字分享。
 
@@ -17,9 +27,9 @@
 
 ### 🚀 访问方式
 
-**在线预览**：https://junglenovacn.github.io/chrismas/
+**在线预览**：https://junglenovacn.github.io/chrismas/christmas-tree.html
 
-**本地预览**：用浏览器打开 `index.html`
+**本地预览**：用浏览器打开 `christmas-tree.html`
 
 ### 📱 使用方法
 
@@ -31,12 +41,12 @@
 ### 分享链接格式
 
 ```
-https://junglenovacn.github.io/chrismas/?msg=圣诞快乐
+https://junglenovacn.github.io/chrismas/christmas-tree.html?msg=圣诞快乐
 ```
 
 ---
 
-## 🎊 页面2：中国春节
+## 🎊 动画2：中国春节
 
 传统中国春节主题的3D动画场景，包含红灯笼和烟花效果。
 
